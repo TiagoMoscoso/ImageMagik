@@ -1,0 +1,11 @@
+Salve galera titi aqui:
+
+para instalar todas dependencias execute:
+pip install -r requirements.txt
+
+configurei ja o debug, entao nada de ficar mandando comando no terminal pra rodar o app, ja tem um launch.json configurado na pasta vscode, qualquer coisa criar um perfil novo para voce
+so clicar no botao de debug na aba Run & Debug do vscode e rodar
+
+para os filtros pensei em criar a Filter como um abstrato para nos obrigar a implementar o metodo apply, mas como nao temos nenhum filtro por enquanto, deixei assim mesmo so com um metodo
+
+
