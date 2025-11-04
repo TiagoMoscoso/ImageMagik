@@ -1,118 +1,79 @@
-import sys, tempfile
+from __future__ import annotations
+import os, tempfile, time
+from typing import Dict, Any
+from PIL import Image, ImageOps
 from PySide6.QtCore import QObject, Signal, Slot, Property, QUrl
-from pathlib import Path
-from PIL import Image
-
-TMP_DIR = Path(tempfile.gettempdir())
-COLOR_PREVIEW = TMP_DIR / "qml_edit_color.png"
-GRAY_PREVIEW  = TMP_DIR / "qml_edit_gray.png"
+from .filters import FILTERS, FILTERS_LIST
 
 
 class ImageVM(QObject):
-    # signals
-    colorUrlChanged = Signal(QUrl)
-    grayUrlChanged  = Signal(QUrl)
-    activeModeChanged = Signal(str)
-    coordsChanged = Signal(int, int, int, int)
-    sizeChanged = Signal(int, int)
+    activeModeChanged = Signal()
+    imageChanged = Signal()
+    selectionChanged = Signal()
 
-    def __init__(self):
-        super().__init__()
-        self._src_path: Path | None = None
-        self._color_url = QUrl()
-        self._gray_url  = QUrl()
-        self._active_mode = "color"  # "color" | "gray"
-        self._iw = 0
-        self._ih = 0
-
-    # ---- properties expostas ao QML ----
-    def getColorUrl(self) -> QUrl:
-        return self._color_url
-    colorUrl = Property(QUrl, fget=getColorUrl, notify=colorUrlChanged)
-
-    def getGrayUrl(self) -> QUrl:
-        return self._gray_url
-    grayUrl = Property(QUrl, fget=getGrayUrl, notify=grayUrlChanged)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._activeMode = "color"
+        self._image: Image.Image | None = None
+        self._imageWidth = 0
+        self._imageHeight = 0
+        self._colorUrl = ""
+        self._grayUrl = ""
+        self._x0 = self._y0 = self._x1 = self._y1 = 0
 
     def getActiveMode(self) -> str:
-        return self._active_mode
-    def setActiveMode(self, mode: str):
-        if mode not in ("color", "gray"):
-            return
-        if mode != self._active_mode:
-            self._active_mode = mode
-            self.activeModeChanged.emit(self._active_mode)
-    activeMode = Property(str, fget=getActiveMode, fset=setActiveMode, notify=activeModeChanged)
-
-    def getImageWidth(self) -> int:
-        return self._iw
-    def getImageHeight(self) -> int:
-        return self._ih
-    imageWidth  = Property(int, fget=getImageWidth, notify=sizeChanged)
-    imageHeight = Property(int, fget=getImageHeight, notify=sizeChanged)
-
-    # ---- slots chamados pelo QML ----
-    @Slot(str)
-    def openImage(self, file_url: str):
-        url = QUrl(file_url)
-        path = Path(url.toLocalFile()) if url.isLocalFile() else Path(file_url)
-        if not path.exists():
-            return
-        self._src_path = path
-        self._process_pipeline()
+        return self._activeMode
 
     @Slot(str)
-    def setActive(self, mode: str):
-        self.setActiveMode(mode)
+    def setActive(self, mode: str) -> None:
+        if mode in ("color", "gray") and self._activeMode != mode:
+            self._activeMode = mode
+            self.activeModeChanged.emit()
+
+    activeMode = Property(str, fget=getActiveMode, notify=activeModeChanged)
+
+    colorUrl = Property(str, fget=lambda s: s._colorUrl, notify=imageChanged)
+    grayUrl  = Property(str, fget=lambda s: s._grayUrl,  notify=imageChanged)
+    imageWidth  = Property(int, fget=lambda s: s._imageWidth,  notify=imageChanged)
+    imageHeight = Property(int, fget=lambda s: s._imageHeight, notify=imageChanged)
+
+    @Property("QVariant", constant=True)
+    def filters(self):
+        return FILTERS_LIST
+
+    @Slot(str)
+    def openImage(self, qurl: str) -> None:
+        path = QUrl(qurl).toLocalFile() if qurl.startswith("file:") else qurl
+        img = Image.open(path).convert("RGBA")
+        self._image = img
+        self._imageWidth, self._imageHeight = img.size
+        self._colorUrl = self._save_temp(img)
+        self._grayUrl  = self._save_temp(ImageOps.grayscale(img).convert("RGBA"))
+        self.imageChanged.emit()
 
     @Slot(int, int, int, int)
-    def updateSelection(self, x0: int, y0: int, x1: int, y1: int):
-        # Coordenadas sempre no espaço da imagem (pixels reais)
-        self.coordsChanged.emit(x0, y0, x1, y1)
+    def updateSelection(self, x0: int, y0: int, x1: int, y1: int) -> None:
+        self._x0, self._y0, self._x1, self._y1 = x0, y0, x1, y1
+        self.selectionChanged.emit()
 
-    # ---- processamento ----
-    def _process_pipeline(self):
-        try:
-            img = Image.open(self._src_path)
+    @Slot(str, "QVariant")
+    def applyFilter(self, key: str, args) -> None:
+        if self._image is None or key not in FILTERS:
+            return
+        filt = FILTERS[key]
+        coords = (self._x0, self._y0, self._x1, self._y1)
+        py_args: Dict[str, Any] = dict(args) if isinstance(args, dict) else {}
+        out = filt.apply(self._image, coords, py_args)
 
-            # 1) Normaliza para edição (RGB/RGBA)
-            edit_img = self.normalize_for_editing(img)
+        self._image = out
+        self._imageWidth, self._imageHeight = out.size
+        self._colorUrl = self._save_temp(out)
+        self._grayUrl  = self._save_temp(ImageOps.grayscale(out).convert("RGBA"))
+        self.imageChanged.emit()
 
-            # Guarda dimensões reais da imagem processada
-            self._iw, self._ih = edit_img.size
-            self.sizeChanged.emit(self._iw, self._ih)
-
-            # 2) Gera versão em tons de cinza
-            gray_img = edit_img.convert("L")
-
-            # 3) Salva prévias (PNG sem perder nitidez)
-            edit_img.save(COLOR_PREVIEW)
-            gray_img.save(GRAY_PREVIEW)
-
-            # 4) Atualiza URLs no QML
-            self._color_url = QUrl.fromLocalFile(str(COLOR_PREVIEW))
-            self._gray_url  = QUrl.fromLocalFile(str(GRAY_PREVIEW))
-            self.colorUrlChanged.emit(self._color_url)
-            self.grayUrlChanged.emit(self._gray_url)
-
-            # Reseta modo ativo para “color” (padrão)
-            self.setActiveMode("color")
-
-        except Exception as e:
-            print("Processing error:", e, file=sys.stderr)
-            
-    def normalize_for_editing(self, img: Image.Image) -> Image.Image:
-        """
-        Normaliza a imagem para um formato padrão de edição:
-        - Mantém alpha se existir: RGBA
-        - Caso contrário: RGB
-        - Converte paleta/CMYK/YCbCr/LAB/HSV/I/F para RGB/RGBA
-        """
-        m = img.mode
-        if m in ("LA", "RGBA"):
-            return img.convert("RGBA")
-        if m == "RGB":
-            return img
-        if m == "L":
-            return img.convert("RGB")
-        return img.convert("RGB")
+    def _save_temp(self, pil_img: Image.Image) -> str:
+        fd, path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        pil_img.save(path, "PNG")
+        url = QUrl.fromLocalFile(path).toString()
+        return f"{url}?t={int(time.time()*1000)}"

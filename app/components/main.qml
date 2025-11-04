@@ -49,6 +49,24 @@ ApplicationWindow {
         text: `Seleção: (${x0},${y0}) → (${x1},${y1})  |  Dim: ${Math.abs(x1-x0)}x${Math.abs(y1-y0)}`
         font.bold: true
       }
+
+      ComboBox {
+        id: filterCombo
+        model: imageVM.filters
+        textRole: "name"
+        valueRole: "key"
+        Layout.preferredWidth: 220
+      }
+
+      ToolButton {
+        text: "Aplicar filtro"
+        onClicked: {
+          // Exemplo: Blur usa argumento; Gray não precisa
+          const key = filterCombo.currentValue
+          const args = key === "blur" ? { radius: 4.0 } : {}
+          imageVM.applyFilter(key, args)
+        }
+      }
     }
   }
 
