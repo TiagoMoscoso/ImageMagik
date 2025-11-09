@@ -88,6 +88,7 @@ class MainWindow(QMainWindow, ParametersUI, ToolbarUI, SelectionUI, ApplyUI):
 
         vr.addStretch(1)
         h.addWidget(self.right, 0)
+        
         self.FILTER_PANEL_RATIO = 0.2
         screen_w = QGuiApplication.primaryScreen().availableGeometry().width()
         target_w = int(screen_w * self.FILTER_PANEL_RATIO)
