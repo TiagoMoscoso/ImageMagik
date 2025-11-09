@@ -1,7 +1,7 @@
 import os
 from typing import List
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QAction, QPixmap
+from PySide6.QtGui import QAction, QPixmap, QIcon
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QFileDialog, QLabel, QToolBar,
@@ -20,7 +20,8 @@ from app.domain.imagedoc import ImageDoc
 class MainWindow(QMainWindow, ParametersUI, ToolbarUI, SelectionUI, ApplyUI):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("IMAGEMAGIK")
+        self.setWindowTitle("Image Magik")
+        self.setWindowIcon(QIcon("assets/tuxmage.png"))
         self.resize(1200, 720)
 
         self.docs: List[ImageDoc] = []
