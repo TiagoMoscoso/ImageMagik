@@ -34,4 +34,3 @@ FILTERS: Dict[str, FilterSpec] = {
         ParamSpec("weights", "text", "0 -1 0\n-1 5 -1\n0 -1 0")
     ], lambda img, **kw: filter_kernel.apply(img, kernel=parse_kernel(kw)))
 }
-

@@ -8,7 +8,7 @@ def main():
 
     app.setStyle(QStyleFactory.create("Fusion"))
 
-    apply_stylesheet(app, theme='dark_blue.xml')
+    #apply_stylesheet(app, theme='dark_blue.xml')
 
     win = MainWindow()
     win.showMaximized()
