@@ -1,5 +1,14 @@
 import numpy as np
 
+def generate_laplacian_kernel(size: int):
+    if size % 2 == 0:
+        raise ValueError("O tamanho do kernel deve ser ímpar.")
+
+    kernel = np.full((size, size), -1, dtype=float)
+    center = size // 2
+    kernel[center, center] = (size * size) - 1
+    return kernel
+
 def apply_kernel_laplacian(matrix, x, y, kernel, k_offset):
     height = len(matrix)
     width = len(matrix[0])
@@ -25,8 +34,9 @@ def apply_kernel_laplacian(matrix, x, y, kernel, k_offset):
 
 
 class Filter_Laplacian:
-    def apply(self, img, kernel):
-        # kernel Laplaciano (8 conexões)
+    def apply(self, img, kernel_size):
+        # kernel Laplaciano (N conexões conexões)
+        kernel = generate_laplacian_kernel(kernel_size)
 
         k_size = len(kernel)
         k_offset = k_size // 2
@@ -34,7 +44,7 @@ class Filter_Laplacian:
         height = len(img)
         width = len(img[0])
 
-        output_img = np.copy(img)
+        output_img = np.zeros_like(img)
 
         for y in range(height):
             for x in range(width):
@@ -43,3 +53,5 @@ class Filter_Laplacian:
                 )
 
         return output_img
+
+
