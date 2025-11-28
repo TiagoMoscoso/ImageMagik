@@ -16,7 +16,7 @@ class ToolbarUI:
         files, _ = QFileDialog.getOpenFileNames(
             self, "Adicionar imagens",
             os.getcwd(),
-            "Imagens (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+            "Imagens (*.raw)"
         )
         for f in files:
             try:
@@ -50,7 +50,7 @@ class ToolbarUI:
             return
         path, _ = QFileDialog.getSaveFileName(
             self, "Exportar imagem", "saida.png",
-            "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+            "RAW (*.raw);;"
         )
         if not path:
             return
