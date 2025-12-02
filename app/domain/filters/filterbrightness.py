@@ -4,6 +4,18 @@ from app.domain.filter import Filter
 
 class Filter_brightness(Filter):
     def apply(self, img: np.ndarray, factor: float = 1.2, **kwargs) -> np.ndarray:
-        rgb = self.as_rgb(img).astype(np.float32)
-        out = np.clip(rgb * factor, 0, 255)
-        return self.rejoin_rgba(out.astype(np.uint8), img)
+        gray = self.ensure_gray(img)
+        h, w = gray.shape
+        out = np.zeros((h, w), dtype=np.uint8)
+
+        for i in range(h):
+            for j in range(w):
+                v = int(gray[i, j])
+                v = int(v * factor)
+                if v < 0:
+                    v = 0
+                elif v > 255:
+                    v = 255
+                out[i, j] = v
+
+        return out

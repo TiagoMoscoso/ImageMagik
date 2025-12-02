@@ -1,30 +1,51 @@
 import numpy as np
 
 class Filter:
+    def ensure_gray(self, img: np.ndarray) -> np.ndarray:
+        arr = np.asarray(img)
 
-    def as_rgb(self, arr: np.ndarray) -> np.ndarray:
-        if arr.ndim == 2:
-            return np.stack([arr, arr, arr], axis=2)
-        if arr.shape[2] == 4:
-            return arr[..., :3]
+        if arr.ndim != 2:
+            raise ValueError(f"Imagem inválida para RAW: esperado 2D, veio shape={arr.shape}")
+        
+        if arr.dtype != np.uint8:
+            arr = arr.astype(np.uint8)
+
         return arr
 
-    def rejoin_rgba(self, rgb: np.ndarray, base: np.ndarray) -> np.ndarray:
-        if base.ndim == 2:
-            return rgb[..., 0]
-        if base.shape[2] == 4:
-            a = base[..., 3:4]
-            return np.concatenate([rgb, a], axis=2)
-        return rgb
-    
-    def convolve_channel(self, ch: np.ndarray, kernel: np.ndarray) -> np.ndarray:
-        kh, kw = kernel.shape
-        pad_h, pad_w = kh // 2, kw // 2
-        padded = np.pad(ch, ((pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
-        out = np.zeros_like(ch, dtype=np.float32)
-        for i in range(ch.shape[0]):
-            roi = padded[i:i+kh, :]
-            for j in range(ch.shape[1]):
-                patch = roi[:, j:j+kw]
-                out[i, j] = np.sum(patch * kernel)
-        return np.clip(out, 0, 255).astype(np.uint8)
+    def convolve(self, img: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+        gray = self.ensure_gray(img)
+        h, w = gray.shape
+
+        k = np.asarray(kernel, dtype=float)
+        kh, kw = k.shape
+        pad_h = kh // 2
+        pad_w = kw // 2
+
+        out = np.zeros((h, w), dtype=float)
+
+        for i in range(h):
+            for j in range(w):
+                acc = 0.0
+                # percorre a mascara
+                for ki in range(kh):
+                    for kj in range(kw):
+                        ii = i + ki - pad_h
+                        jj = j + kj - pad_w
+
+                        # trata borda
+                        if ii < 0:
+                            ii = 0
+                        elif ii >= h:
+                            ii = h - 1
+
+                        if jj < 0:
+                            jj = 0
+                        elif jj >= w:
+                            jj = w - 1
+
+                        acc += float(gray[ii, jj]) * k[ki, kj]
+
+                out[i, j] = acc
+
+        out = np.clip(out, 0, 255)
+        return out.astype(np.uint8)

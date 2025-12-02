@@ -2,26 +2,25 @@ import numpy as np
 from PIL import Image
 from PySide6.QtGui import QImage
 from typing import Any, Dict, List
-# -------------------- Util: conversões QImage <-> NumPy -------------------- #
+
 def qimage_from_numpy(arr: np.ndarray) -> QImage:
-    if arr.dtype != np.uint8:
-        arr = np.clip(arr, 0, 255).astype(np.uint8)
+    arr = np.ascontiguousarray(arr)
+
     if arr.ndim == 2:
         h, w = arr.shape
-        fmt = QImage.Format_Grayscale8
-        qimg = QImage(arr.data, w, h, w, fmt)
+        stride = w
+        qimg = QImage(arr.data, w, h, stride, QImage.Format_Grayscale8)
         return qimg.copy()
-    elif arr.ndim == 3 and arr.shape[2] in (3, 4):
+
+    elif arr.ndim == 3:
         h, w, c = arr.shape
         if c == 3:
-            # Convert RGB -> RGBA
-            rgba = np.concatenate([arr, np.full((h, w, 1), 255, dtype=np.uint8)], axis=2)
+            arr_rgba = np.dstack([arr, np.full((h, w), 255, dtype=np.uint8)])
         else:
-            rgba = arr
-        qimg = QImage(rgba.data, w, h, w*4, QImage.Format_RGBA8888)
+            arr_rgba = arr
+        arr_rgba = np.ascontiguousarray(arr_rgba)  # <-- GARANTIDO TAMBÉM PARA RGB/RGBA
+        qimg = QImage(arr_rgba.data, w, h, 4*w, QImage.Format_RGBA8888)
         return qimg.copy()
-    else:
-        raise ValueError("Array com formato inválido para QImage.")
 
 def numpy_from_qimage(qimg: QImage) -> np.ndarray:
     qimg = qimg.convertToFormat(QImage.Format_RGBA8888)
