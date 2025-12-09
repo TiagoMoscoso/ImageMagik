@@ -14,11 +14,11 @@ class Filter_difference(Filter):
         # cria imagem de saída manualmente
         diff_img = np.zeros((height, width), dtype=np.uint8)
 
-        # cálculo manual da diferença absoluta pixel a pixel
+        # calculo manual da diferença absoluta pixel a pixel
         for i in range(height):
             for j in range(width):
 
-                # lê os pixels e converte pra int (evita underflow de uint8)
+                # lê os pixels e converte pra int
                 a = int(base[i, j])
                 b = int(other_gray[i, j])
 
@@ -33,7 +33,6 @@ class Filter_difference(Filter):
                 elif d > 255:
                     d = 255
 
-                # salva no resultado
                 diff_img[i, j] = d
 
         return diff_img

@@ -68,7 +68,7 @@ FILTERS: Dict[str, FilterSpec] = {
 
     "Histograma": FilterSpec("Histograma", [], filter_histogram.apply),
 
-    "Diff": FilterSpec("Diff", [
+    "Diferença": FilterSpec("Diff", [
         ParamSpec("other", "image", 0),
     ], filter_difference.apply)
 }
