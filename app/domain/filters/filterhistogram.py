@@ -6,27 +6,33 @@ class Filter_histogram(Filter):
     def apply(self, img: np.ndarray, **kwargs) -> np.ndarray:
         # garante grayscale
         gray = self.ensure_gray(img)
-        
-        # calcula histograma
-        hist, _ = np.histogram(gray.flatten(), bins=256, range=(0, 255))
 
-        # tamanho da imagem do histograma
+        # inicializa histograma manualmente (256 contadores)
+        hist = [0] * 256
+
+        # percorre pixel a pixel e contabiliza
+        h, w = gray.shape
+        for i in range(h):
+            for j in range(w):
+                val = int(gray[i, j])  # 0..255
+                hist[val] += 1
+
+        # tamanho da imagem final do histograma
         hist_width = 256
         hist_height = 128
-
-        # imagem branca para desenhar o histograma
         hist_img = np.full((hist_height, hist_width), 255, dtype=np.uint8)
 
-        # normaliza o histograma para caber na altura
-        max_val = np.max(hist)
+        # normaliza manualmente
+        max_val = max(hist)
         if max_val == 0:
-            return hist_img  # evita divisao por zero
+            return hist_img
 
-        scaled = (hist / max_val) * (hist_height - 1)
-
-        # desenha o histograma (barras verticais pretas)
+        # escala: cada coluna x recebe uma barra proporcional
         for x in range(256):
-            h = int(scaled[x])
-            hist_img[hist_height - 1 - h : hist_height, x] = 0
+            scaled_h = int(hist[x] / max_val * (hist_height - 1))
+            # desenha de baixo pra cima
+            for y in range(hist_height - 1, hist_height - 1 - scaled_h, -1):
+                hist_img[y, x] = 0
 
         return hist_img
+
