@@ -1,25 +1,39 @@
 import numpy as np
 from app.domain.filter import Filter
 
-
 class Filter_difference(Filter):
     def apply(self, img: np.ndarray, other: np.ndarray, **kwargs) -> np.ndarray:
-        # garante que as duas imagens estao em escala de cinza
+        # garante que as duas imagens estão em escala de cinza
         base = self.ensure_gray(img)
         other_gray = self.ensure_gray(other)
 
-        # calcula dimensoes validas
+        # calcula dimensões válidas
         height = min(base.shape[0], other_gray.shape[0])
         width = min(base.shape[1], other_gray.shape[1])
 
-        # recorta as duas imagens para o mesmo tamanho
-        base_cut = base[:height, :width].astype(np.int16)
-        other_cut = other_gray[:height, :width].astype(np.int16)
+        # cria imagem de saída manualmente
+        diff_img = np.zeros((height, width), dtype=np.uint8)
 
-        # diferença absoluta
-        diff = np.abs(base_cut - other_cut)
+        # cálculo manual da diferença absoluta pixel a pixel
+        for i in range(height):
+            for j in range(width):
 
-        # clamping para 0–255
-        diff = np.clip(diff, 0, 255).astype(np.uint8)
+                # lê os pixels e converte pra int (evita underflow de uint8)
+                a = int(base[i, j])
+                b = int(other_gray[i, j])
 
-        return diff
+                # diferença absoluta manual
+                d = a - b
+                if d < 0:
+                    d = -d
+
+                # clamp manual para 0–255
+                if d < 0:
+                    d = 0
+                elif d > 255:
+                    d = 255
+
+                # salva no resultado
+                diff_img[i, j] = d
+
+        return diff_img
