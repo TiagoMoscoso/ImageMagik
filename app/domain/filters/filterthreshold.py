@@ -5,17 +5,17 @@ from app.domain.filter import Filter
 class Filter_threshold(Filter):
     def apply(self, img: np.ndarray, threshold: int = 128, **kwargs) -> np.ndarray:
         gray = self.ensure_gray(img)
-        h, w = gray.shape
-        out = np.zeros((h, w), dtype=np.uint8)
+        height, width = gray.shape
+        output = np.zeros((height, width), dtype=np.uint8)
 
-        if threshold < 0:
-            threshold = 0
-        elif threshold > 255:
-            threshold = 255
+        # mantem threshold dentro de 0 a 255
+        threshold = max(0, min(threshold, 255))
 
-        for i in range(h):
-            for j in range(w):
-                v = int(gray[i, j])
-                out[i, j] = 255 if v >= threshold else 0
+        for y in range(height):     # linha
+            for x in range(width):  # coluna
+                value = int(gray[y, x])
 
-        return out
+                # aplica limiarizacao
+                output[y, x] = 255 if value >= threshold else 0
+
+        return output

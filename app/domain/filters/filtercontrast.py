@@ -5,17 +5,20 @@ from app.domain.filter import Filter
 class Filter_contrast(Filter):
     def apply(self, img: np.ndarray, factor: float = 1.2, **kwargs) -> np.ndarray:
         gray = self.ensure_gray(img)
-        h, w = gray.shape
-        out = np.zeros((h, w), dtype=np.uint8)
+        height, width = gray.shape
+        output = np.zeros((height, width), dtype=np.uint8)
 
-        for i in range(h):
-            for j in range(w):
-                v = int(gray[i, j])
-                v = int((v - 128) * factor + 128)
-                if v < 0:
-                    v = 0
-                elif v > 255:
-                    v = 255
-                out[i, j] = v
+        # percorre cada pixel
+        for y in range(height):     # linha
+            for x in range(width):  # coluna
+                value = int(gray[y, x])
 
-        return out
+                # aplica contraste: desloca do meio (128), multiplica e volta
+                new_value = int((value - 128) * factor + 128)
+
+                # clamping para manter dentro de 0 a 255
+                new_value = max(0, min(new_value, 255))
+
+                output[y, x] = new_value
+
+        return output

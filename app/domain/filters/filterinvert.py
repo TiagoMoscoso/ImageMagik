@@ -5,12 +5,15 @@ from app.domain.filter import Filter
 class Filter_invert(Filter):
     def apply(self, img: np.ndarray, **kwargs) -> np.ndarray:
         gray = self.ensure_gray(img)
-        h, w = gray.shape
-        out = np.zeros((h, w), dtype=np.uint8)
+        height, width = gray.shape
+        output = np.zeros((height, width), dtype=np.uint8)
 
-        for i in range(h):
-            for j in range(w):
-                v = int(gray[i, j])
-                out[i, j] = 255 - v
+        # percorre cada pixel da imagem
+        for y in range(height):     # linha
+            for x in range(width):  # coluna
+                value = int(gray[y, x])
 
-        return out
+                # inverte o pixel: 255 - valor_atual
+                output[y, x] = 255 - value
+
+        return output

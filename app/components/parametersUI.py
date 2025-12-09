@@ -61,6 +61,13 @@ class ParametersUI:
                 if 0 <= default_idx < w.count():
                     w.setCurrentIndex(default_idx)
 
+            elif p.ptype == "select":
+                w = QComboBox()
+                for opt in p.options:
+                    w.addItem(opt)
+                if p.default in p.options:
+                    w.setCurrentIndex(p.options.index(p.default))
+
             else:
                 continue
 

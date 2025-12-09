@@ -1,4 +1,6 @@
 import os
+import math
+import re
 import numpy as np
 
 from PySide6.QtWidgets import (
@@ -16,40 +18,37 @@ from app.domain.imagedoc import ImageDoc
 class ToolbarUI:
     def __init__(self):
         self.params_form = QFormLayout()
+        self.docs = []
+        self.current_index = None
 
 
     def load_raw_with_meta(self, raw_path: str) -> np.ndarray:
-        """
-        Lê um arquivo .raw (8 bits/pixel, grayscale) usando um arquivo
-        de metadados '<nome>_meta.txt' no formato:
+        with open(raw_path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
 
-            <largura> <altura>
-        """
-        base, _ = os.path.splitext(raw_path)
-        meta_path = base + "_meta.txt"
+        if not content:
+            raise ValueError("Arquivo RAW está vazio.")
 
-        if not os.path.exists(meta_path):
-            raise FileNotFoundError(f"Metadados não encontrados: {meta_path}")
+        tokens = re.split(r"\s+", content)
 
-        with open(meta_path, "r", encoding="utf-8") as f:
-            parts = f.read().strip().split()
-            if len(parts) < 2:
-                raise ValueError(
-                    f"Meta inválido em {meta_path}. "
-                    f"Esperado: 'largura altura'."
-                )
-            width, height = map(int, parts[:2])
+        try:
+            values = np.array([int(t) for t in tokens], dtype=np.uint8)
+        except ValueError as e:
+            raise ValueError(f"RAW contém valores não numéricos ou inválidos: {e}")
 
-        data = np.fromfile(raw_path, dtype=np.uint8)
-        expected_size = width * height
+        num_pixels = values.size
+        dim = int(math.isqrt(num_pixels))
 
-        if data.size != expected_size:
+        if dim * dim != num_pixels:
             raise ValueError(
-                f"Tamanho do RAW ({data.size}) não bate com "
-                f"largura x altura ({expected_size})."
+                f"Erro: o arquivo RAW tem {num_pixels} valores, "
+                f"não forma um quadrado perfeito (dim^2 = {dim * dim})."
             )
 
-        return data.reshape((height, width))
+        width = dim
+        height = dim
+
+        return values.reshape((height, width))
 
 
     def on_add_images(self):
@@ -57,17 +56,14 @@ class ToolbarUI:
             self,
             "Adicionar imagens RAW",
             os.getcwd(),
-<<<<<<< HEAD
             "Imagens (*.raw)"
-=======
-            "Imagens RAW (*.raw)"
->>>>>>> 57863f5 (.raw alteracao)
         )
 
         for f in files:
             try:
                 arr = self.load_raw_with_meta(f)
-                doc = ImageDoc(f, arr) 
+
+                doc = ImageDoc(f, arr)
                 self.docs.append(doc)
 
                 item = QListWidgetItem(os.path.basename(f))
@@ -79,6 +75,7 @@ class ToolbarUI:
 
             except Exception as e:
                 QMessageBox.warning(self, "Erro", f"Falha ao abrir {f}\n{e}")
+
 
     def on_remove_selected(self):
         idx = self.listw.currentRow()
@@ -95,21 +92,15 @@ class ToolbarUI:
             self.image_label.setText("Abra uma imagem RAW…")
             self.image_label.setPixmap(QPixmap())
 
+
     def on_export_image(self):
         doc = self.get_current_doc()
         if not doc:
             return
 
         path, _ = QFileDialog.getSaveFileName(
-<<<<<<< HEAD
             self, "Exportar imagem", "saida.png",
             "RAW (*.raw);;"
-=======
-            self,
-            "Exportar imagem",
-            "saida.png",
-            "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
->>>>>>> 57863f5 (.raw alteracao)
         )
         if not path:
             return

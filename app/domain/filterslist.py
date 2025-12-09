@@ -10,8 +10,9 @@ from app.domain.filters.filtermean import Filter_mean
 from app.domain.filters.filtermedian import Filter_median
 from app.domain.filters.filterlaplacian import Filter_laplacian
 from app.domain.filters.filtermask import Filter_mask
-
 from app.domain.filterspec import FilterSpec
+from app.domain.filters.filterhistogram import Filter_histogram
+from app.domain.filters.filterdifference import Filter_difference
 from app.domain.imageconverter import parse_kernel
 from app.domain.paramspec import ParamSpec
 
@@ -24,16 +25,19 @@ filter_mean = Filter_mean()
 filter_median = Filter_median()
 filter_laplacian = Filter_laplacian()
 filter_mask = Filter_mask()
+filter_histogram = Filter_histogram()
+filter_difference = Filter_difference()
 #REGRA CRIA UMA CLASSE FILTER_NOME_DO_FILTRO QUE HERDA OBRIGATORIAMENTE DE FILTER, adicionar nesse dicionario e ja vai direto pra ui
 
 FILTERS: Dict[str, FilterSpec] = {
-    "Invert": FilterSpec("Invert", [], filter_invert.apply),
+    "Inverter": FilterSpec("Inverter", [], filter_invert.apply),
 
-    "Brightness": FilterSpec("Brightness", [
-        ParamSpec("factor", "float", 1.2, 0.1, 5.0, 0.05)
+    "Brilho": FilterSpec("Brilho", [
+        ParamSpec("offset", "int", 0, -255, 255, 5)
     ], filter_brightness.apply),
 
-    "Contrast": FilterSpec("Contrast", [
+
+    "Contraste": FilterSpec("Contraste", [
         ParamSpec("factor", "float", 1.2, 0.1, 5.0, 0.05)
     ], filter_contrast.apply),
 
@@ -46,7 +50,8 @@ FILTERS: Dict[str, FilterSpec] = {
     ], filter_mean.apply),
 
     "Mediana": FilterSpec("Mediana", [
-        ParamSpec("size", "int", 3, 1, 15, 2)
+        ParamSpec("size", "int", 3, 1, 15, 2),
+        ParamSpec("border", "select", "replicate", options=["replicate", "zero"])
     ], filter_median.apply),
 
     "Laplaciano": FilterSpec("Laplaciano", [], filter_laplacian.apply),
@@ -55,11 +60,17 @@ FILTERS: Dict[str, FilterSpec] = {
         ParamSpec("mask", "image", 0),
     ], filter_mask.apply),
 
-    "Custom Kernel": FilterSpec("Custom Kernel", [
+    "Kernel customizado": FilterSpec("Custom Kernel", [
         ParamSpec("rows", "int", 3, 1, 15, 1),
         ParamSpec("cols", "int", 3, 1, 15, 1),
         ParamSpec("weights", "text", "0 -1 0\n-1 5 -1\n0 -1 0")
-    ], lambda img, **kw: filter_kernel.apply(img, kernel=parse_kernel(kw)))
+    ], lambda img, **kw: filter_kernel.apply(img, kernel=parse_kernel(kw))),
+
+    "Histograma": FilterSpec("Histograma", [], filter_histogram.apply),
+
+    "Diff": FilterSpec("Diff", [
+        ParamSpec("other", "image", 0),
+    ], filter_difference.apply)
 }
 
 
