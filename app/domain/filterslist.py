@@ -38,7 +38,7 @@ FILTERS: Dict[str, FilterSpec] = {
 
 
     "Contraste": FilterSpec("Contraste", [
-        ParamSpec("factor", "float", 1.2, 0.1, 5.0, 0.05)
+        ParamSpec("factor", "float", 1.2, 0.01, 15.0, 0.05)
     ], filter_contrast.apply),
 
     "Limiarização": FilterSpec("Limiarização", [

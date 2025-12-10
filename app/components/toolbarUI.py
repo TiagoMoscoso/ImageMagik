@@ -93,20 +93,40 @@ class ToolbarUI:
             self.image_label.setPixmap(QPixmap())
 
 
+
     def on_export_image(self):
         doc = self.get_current_doc()
         if not doc:
             return
 
         path, _ = QFileDialog.getSaveFileName(
-            self, "Exportar imagem", "saida.png",
+            self,
+            "Exportar imagem",
+            "saida.raw",
             "RAW (*.raw);;"
         )
         if not path:
             return
 
         try:
-            numpy_to_pil(doc.current).save(path)
-            QMessageBox.information(self, "OK", f"Imagem exportada em:\n{path}")
+            img = doc.current
+
+            # garante que é uint8 e 2D (escala de cinza)
+            if img.ndim == 3:
+                # se for RGB/RGBA, converte usando o mesmo pipeline do PIL
+                pil_img = numpy_to_pil(img).convert("L")
+                pixels = list(pil_img.getdata())
+            else:
+                # assume já ser escala de cinza
+                arr = img.astype(np.uint8).flatten()
+                pixels = arr.tolist()
+
+            # salva RAW em TEXTO: "0 34 255 18 ..."
+            with open(path, "w", encoding="utf-8") as f_raw:
+                f_raw.write(" ".join(str(int(v)) for v in pixels))
+
+            QMessageBox.information(self, "OK", f"Imagem RAW (texto) exportada em:\n{path}")
+
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Falha ao salvar: {e}")
+
